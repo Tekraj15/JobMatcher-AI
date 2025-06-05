@@ -1,0 +1,27 @@
+# Web framework
+fastapi==0.110.2
+uvicorn[standard]==0.29.0
+
+# Data
+pandas==2.2.2
+numpy==1.26.4
+python-dotenv==1.0.1
+
+# ML model
+sentence-transformers==2.6.1
+torch>=2.1.0
+
+# Vector DB
+pinecone-client==3.0.2
+
+# PDF parsing (for resume upload)
+PyPDF2==3.0.1
+
+# Gradio UI
+gradio==4.26.0
+
+# Logging
+loguru==0.7.2
+
+# Optional (parquet support)
+pyarrow==15.0.2
