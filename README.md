@@ -1,6 +1,6 @@
 # JobMatcher-AI
 
-**JobMatcher AI** is a semantic job matching platform that uses Transformer models to recommend the best-matching jobs tailored to a candidate's key skill set and experience using Mantiks API + Pinecone Vector DB + Hugging Face.
+**JobMatcher AI** is a semantic search job matching platform that uses Transformer models to recommend the best-matching jobs tailored to a candidate's key skill set and experience using Mantiks API + Pinecone Vector DB + Hugging Face.
 
 ---
 
