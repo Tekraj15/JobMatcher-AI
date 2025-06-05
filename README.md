@@ -1,6 +1,6 @@
 # JobMatcher-AI
 
-**JobMatcher AI** is a semantic job matching platform that uses Transformer models to recommend best matching jobs tailored to a candidate's key skillset and experience using Mantiks API + Pinecone Vector DB + Hugging Face.
+**JobMatcher AI** is a semantic job matching platform that uses Transformer models to recommend the best-matching jobs tailored to a candidate's key skill set and experience using Mantiks API + Pinecone Vector DB + Hugging Face.
 
 ---
 
@@ -10,17 +10,15 @@ Traditional job search platforms often require job seekers to manually scroll th
 
 Do the specific frameworks, tools, or domain expertise match the candidate’s background?
 
-Does the job use a tech stack or architecture the applicant is confident in?
+Does the job use a tech stack or architecture that the applicant is confident in?
 
-Are subtle industry requirements being overlooked by generic search?
+Are subtle industry requirements being overlooked by a generic search?
 
-This fragmented experience leads to wasted time, decision fatigue, and often, missed opportunities.
 
-JobMatcher AI was born from the idea that we can solve this pain point with the help of machine learning.
-
+This fragmented experience leads to wasted time, decision fatigue, and often, missed opportunities. JobMatcher AI was born from the idea that we can solve this pain point with the help of machine learning.
 Instead of asking job seekers to evaluate every job one by one, why not train a model to do it for them — instantly and intelligently?
 
-JobMatcher AI leverages state-of-the-art semantic models to deeply analyze both resumes and job descriptions. Within seconds, it returns the top-matching jobs — not just by title, but by meaningful skill and context alignment.
+JobMatcher AI leverages state-of-the-art semantic search models to deeply analyze both resumes and job descriptions. Within seconds, it returns the top-matching jobs, not just by title, but by meaningful skill and context alignment.
 
 ##  Features
 
@@ -47,9 +45,8 @@ JobMatcher AI leverages state-of-the-art semantic models to deeply analyze both 
 
 ## Future Vision
 As we enhance the platform, we plan to offer:
-
 A concise, AI-generated match explanation for each job:
 
-“This job matches your profile because you have experience with Kubernetes, NLP, and data pipelines in healthcare — all of which are core to the role.”
+  “This job matches your profile because you have experience with Kubernetes, NLP, and data pipelines in healthcare — all of which are core to the role.”
 
-With JobMatcher AI, candidates can stop second-guessing and start applying with confidence — saving time, energy, and unlocking better-fit opportunities.
+With JobMatcher AI, candidates can stop second-guessing and start applying with confidence, saving time, energy, and unlocking better-fit opportunities.
