@@ -2,7 +2,7 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 
-MODEL_NAME = "intfloat/e5-base"
+MODEL_NAME = "intfloat/e5-base-v2"
 
 # Load model and tokenizer globally
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
