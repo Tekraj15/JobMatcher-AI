@@ -1,6 +1,6 @@
 import gradio as gr
 from PyPDF2 import PdfReader
-from backend.matching import match_resume_to_jobs
+from backend.embedding_and_matching import match_resume_to_jobs
 
 def extract_text_from_pdf(file_obj):
     reader = PdfReader(file_obj)
@@ -28,8 +28,8 @@ demo = gr.Interface(
         gr.Slider(1, 50, value=5, step=1, label="Number of top matching jobs")
     ],
     outputs="text",
-    title="JobMatcher AI - Resume Matching",
-    description="Upload your resume as a PDF file and see top job matches based on semantic similarity."
+    title="JobMatcher AI - Matching jobs where your resume matches perfectly.",
+    description="Upload your resume as a PDF file and see top jobs matched based on Semantic similarity."
 )
 
 if __name__ == "__main__":
