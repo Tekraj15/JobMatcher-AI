@@ -1,5 +1,5 @@
 # End-to-end data flow
-# Load jobs.parquet, embed job texts, and store vectors in a vector database (like Pinecone)
+# Load jobs.parquet, embed job texts, and store vectors in a vector database (Pinecone)
 import pandas as pd
 from tqdm import tqdm
 import os
@@ -29,7 +29,7 @@ def embed_and_store_jobs():
 
     index = create_pinecone_index()
 
-    print(f"[✓] Embedding {len(df)} jobs...")
+    print(f"Embedding {len(df)} jobs...")
     for i in tqdm(range(0, len(df), 16)):
         batch = df["text"].iloc[i:i+16].tolist()
         batch_ids = df["job_id"].iloc[i:i+16].astype(str).tolist()
@@ -40,7 +40,7 @@ def embed_and_store_jobs():
             vectors.append((id_, vec.tolist(), meta))
 
     index.upsert(vectors)
-    print(f"[✓] Uploaded {len(vectors)} job vectors to Pinecone.")
+    print(f"Uploaded {len(vectors)} job vectors to Pinecone.")
 
 if __name__ == "__main__":
     embed_and_store_jobs()

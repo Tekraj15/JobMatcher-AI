@@ -7,7 +7,7 @@ from datetime import datetime
 
 load_dotenv()
 
-MODEL_NAME = "intfloat/e5-base"
+MODEL_NAME = "intfloat/e5-base-v2"
 SAVE_PATH = f"./finetuned_model/{datetime.now().strftime('%Y%m%d_%H%M')}"
 
 # Reads data/feedback.csv entries
@@ -42,7 +42,7 @@ def fine_tune_model():
     job_lookup = load_job_descriptions()
     examples = create_training_examples(df, job_lookup)
 
-    if len(examples) < 10:
+    if len(examples) < 5:
         print("[!] Not enough feedback data to fine-tune.")
         return
 
