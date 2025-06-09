@@ -72,4 +72,4 @@ def fetch_jobs_pipeline(job_titles, location_ids, limit=10, save_path="data/jobs
     with open(save_path, "w") as f:
         json.dump(all_jobs, f, indent=2)
 
-    print(f"[✓] Saved {len(all_jobs)} job listings to {save_path}")
+    print(f"Saved {len(all_jobs)} job listings to {save_path}")
