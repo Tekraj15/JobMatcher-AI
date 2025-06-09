@@ -7,7 +7,7 @@ from datetime import datetime
 
 load_dotenv()
 
-MODEL_NAME = "intfloat/e5-base"
+MODEL_NAME = "intfloat/e5-base-v2"
 SAVE_PATH = f"./finetuned_model/{datetime.now().strftime('%Y%m%d_%H%M')}"
 
 # Reads data/feedback.csv entries
