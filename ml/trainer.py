@@ -42,7 +42,7 @@ def fine_tune_model():
     job_lookup = load_job_descriptions()
     examples = create_training_examples(df, job_lookup)
 
-    if len(examples) < 10:
+    if len(examples) < 5:
         print("[!] Not enough feedback data to fine-tune.")
         return
 
