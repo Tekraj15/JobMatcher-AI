@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from datetime import datetime
 from argparse import ArgumentParser
-from backend.mantiks_api import fetch_jobs_pipeline
+from backend.mantiks_job_api import fetch_jobs_pipeline
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -43,11 +43,11 @@ def run_pipeline(job_titles, location_ids, limit):
     flatten_jobs_json(json_path, csv_path)
     convert_csv_to_parquet(csv_path, parquet_path)
 
-    logger.success("✅ Full job ingestion + processing pipeline completed.")
+    logger.success("Full job ingestion + processing pipeline completed.")
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--titles", nargs="+", default=["data scientist", "ML engineer"])
+    parser.add_argument("--titles", nargs="+", default=["Data scientist", "Machine Learning Engineer", "Software Developer"])
     parser.add_argument("--location_ids", nargs="+", type=int, default=[2867714])
     parser.add_argument("--limit", type=int, default=10)
 
