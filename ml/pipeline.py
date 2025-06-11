@@ -1,46 +1,66 @@
-# End-to-end data flow
-# Load jobs.parquet, embed job texts, and store vectors in a vector database (Pinecone)
+# End-to-end pipeline: loads job data, embeds text, and upserts to Pinecone
+import os
 import pandas as pd
 from tqdm import tqdm
-import os
-import pinecone
+from dotenv import load_dotenv
 from ml.model import embed_batch
+from pinecone import Pinecone, ServerlessSpec
 
-# Load job data
-job_data_path = "data/jobs.parquet"
-index_name = "jobmatcher-index"
-pinecone_api_key = os.getenv("PINECONE_API_KEY")
-pinecone_env = os.getenv("PINECONE_ENV")
+# Load environment variables
+load_dotenv()
 
-def create_pinecone_index():
-    pinecone.init(api_key=pinecone_api_key, environment=pinecone_env)
-    if index_name not in pinecone.list_indexes():
-        pinecone.create_index(index_name, dimension=768)
-    return pinecone.Index(index_name)
+# Constants
+INDEX_NAME = "jobmatcher-ai-index"
 
-def embed_and_store_jobs():
-    df = pd.read_parquet(job_data_path)
-    df = df.dropna(subset=["job_title", "description"])
+#job_data_path = "data/jobs.parquet"
+JOB_DATA_PATH = "data/jobs_2025-06-11_18-30.parquet"  # TEMP: update if needed
+
+# Initialize Pinecone client
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_ENV = os.getenv("PINECONE_ENV")
+
+if not PINECONE_API_KEY or not PINECONE_ENV:
+    raise EnvironmentError("Missing Pinecone API key or environment variable.")
+
+pc = Pinecone(api_key=PINECONE_API_KEY)
+
+def create_or_get_index(index_name=INDEX_NAME, dimension=768, metric="cosine", region="us-east-1"):
+    existing = pc.list_indexes().names()
+
+    if index_name not in existing:
+        pc.create_index(
+            name=index_name,
+            dimension=dimension,
+            metric=metric,
+            spec=ServerlessSpec(cloud="aws", region=region)
+        )
+        print(f"✅ Index '{index_name}' created.")
+    else:
+        print(f"ℹ️ Index '{index_name}' already exists.")
+
+    return pc.Index(index_name)
+
+def embed_and_store_jobs(index):
+    df = pd.read_parquet(JOB_DATA_PATH)
+    df = df.dropna(subset=["job_title", "description", "job_id"])
     df["text"] = df["job_title"] + " " + df["description"]
 
     vectors = []
-    ids = []
-    metadata = []
 
-    index = create_pinecone_index()
-
-    print(f"Embedding {len(df)} jobs...")
+    print(f"🔍 Embedding {len(df)} jobs...")
     for i in tqdm(range(0, len(df), 16)):
-        batch = df["text"].iloc[i:i+16].tolist()
+        batch_texts = df["text"].iloc[i:i+16].tolist()
         batch_ids = df["job_id"].iloc[i:i+16].astype(str).tolist()
         batch_meta = df[["job_title", "company_name", "location"]].iloc[i:i+16].to_dict(orient="records")
-        batch_vectors = embed_batch(batch)
+        batch_vectors = embed_batch(batch_texts)
 
         for id_, vec, meta in zip(batch_ids, batch_vectors, batch_meta):
             vectors.append((id_, vec.tolist(), meta))
 
+    print(f"Uploading {len(vectors)} job vectors to Pinecone...")
     index.upsert(vectors)
-    print(f"Uploaded {len(vectors)} job vectors to Pinecone.")
+    print("Upload complete!")
 
 if __name__ == "__main__":
-    embed_and_store_jobs()
+    index = create_or_get_index()
+    embed_and_store_jobs(index)
