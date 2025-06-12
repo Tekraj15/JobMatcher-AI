@@ -1,5 +1,5 @@
 # Web framework
-fastapi==0.110.2
+fastapi==0.115.2
 uvicorn[standard]==0.29.0
 
 # Data
@@ -16,9 +16,12 @@ pinecone-client==3.0.2
 
 # PDF parsing (for resume upload)
 PyPDF2==3.0.1
+pdfplumber==0.10.2
+
 
 # Gradio UI
-gradio==4.26.0
+gradio==5.33.2
+
 
 # Logging
 loguru==0.7.2
