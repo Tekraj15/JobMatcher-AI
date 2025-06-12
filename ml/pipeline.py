@@ -58,7 +58,11 @@ def embed_and_store_jobs(index):
             vectors.append((id_, vec.tolist(), meta))
 
     print(f"Uploading {len(vectors)} job vectors to Pinecone...")
-    index.upsert(vectors)
+
+    BATCH_SIZE = 100
+    for i in range(0, len(vectors), BATCH_SIZE):
+        index.upsert(vectors[i:i + BATCH_SIZE])
+
     print("Upload complete!")
 
 if __name__ == "__main__":
