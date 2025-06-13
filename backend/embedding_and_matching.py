@@ -1,6 +1,6 @@
 # Vector Embedding and Semantic Search Logic
 import os
-import pinecone
+from pinecone import Pinecone
 from ml.model import embed_text
 from dotenv import load_dotenv
 
@@ -8,14 +8,13 @@ load_dotenv()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENV = os.getenv("PINECONE_ENV")
-INDEX_NAME = "jobmatcher-index"
+INDEX_NAME = "jobmatcher-ai-index"
 
-def init_pinecone():
-    pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
-    return pinecone.Index(INDEX_NAME)
+# Initialize Pinecone client
+pc = Pinecone(api_key=PINECONE_API_KEY)
+index = pc.Index(INDEX_NAME)
 
 def match_resume_to_jobs(resume_text: str, top_k: int = 5):
-    index = init_pinecone()
     query_vector = embed_text(resume_text)
 
     result = index.query(
@@ -26,11 +25,15 @@ def match_resume_to_jobs(resume_text: str, top_k: int = 5):
 
     matched_jobs = []
     for match in result.get("matches", []):
+        metadata = match.get("metadata", {})
         matched_jobs.append({
-            "score": match["score"],
-            "job_title": match["metadata"].get("job_title"),
-            "company_name": match["metadata"].get("company_name"),
-            "location": match["metadata"].get("location"),
+            "score": round(match["score"], 4),
+            "job_title": metadata.get("job_title"),
+            "company_name": metadata.get("company_name"),
+            "location": metadata.get("location"),
+            "last_seen": metadata.get("last_seen"),
+            "job_board_url": metadata.get("job_board_url"),
+            "description": metadata.get("description"),
         })
 
     return matched_jobs
