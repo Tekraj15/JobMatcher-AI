@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 JobMatcher AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">JobMatcher AI</h1>
+            <p class="text-gray-600 mt-2">Upload your resume to find jobs that perfectly match your skills and experience.</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div class="md:col-span-2">
+                    <label for="resume-file" class="block text-sm font-medium text-gray-700 mb-1">Upload Resume (PDF, DOCX, TXT)</label>
+                    <input type="file" id="resume-file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".pdf,.docx,.txt">
+                </div>
+                <div>
+                    <label for="top-k" class="block text-sm font-medium text-gray-700 mb-1">Number of Results</label>
+                    <input type="number" id="top-k" value="10" min="1" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+            </div>
+            <div class="mt-6">
+                <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    Search Jobs
+                </button>
+            </div>
+        </div>
+
+        <div id="status-container" class="text-center my-6"></div>
+        <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        const searchBtn = document.getElementById('search-btn');
+        const resumeFileInput = document.getElementById('resume-file');
+        const topKInput = document.getElementById('top-k');
+        const statusContainer = document.getElementById('status-container');
+        const resultsContainer = document.getElementById('results-container');
+
+        // Main function to handle the search
+        async function handleSearch() {
+            const file = resumeFileInput.files[0];
+            const top_k = topKInput.value;
+
+            if (!file) {
+                showStatus("Please upload a resume file first.", "error");
+                return;
+            }
+
+            // Show loading state
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = 'Searching...';
+            showStatus('<div class="loader mx-auto"></div><p class="mt-2">Analyzing your resume and finding matches...</p>', 'loading');
+            resultsContainer.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append("resume_file", file);
+
+            try {
+                const response = await fetch(`${API_URL}/match-resume-file?top_k=${top_k}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderResults(data.results, file);
+
+            } catch (error) {
+                console.error("Error during search:", error);
+                showStatus(`An error occurred: ${error.message}. Is the backend server running?`, "error");
+            } finally {
+                // Restore button state
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = 'Search Jobs';
+            }
+        }
+
+        searchBtn.addEventListener('click', handleSearch);
+
+        // Function to render the results
+        function renderResults(jobs, resumeFile) {
+            if (!jobs || jobs.length === 0) {
+                showStatus("No matching jobs found. Try a different resume.", "info");
+                return;
+            }
+
+            showStatus(`Found ${jobs.length} matching jobs.`, "success");
+
+            // Store resume text in a temporary way for feedback
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const resumeText = event.target.result.substring(0, 500);
+                resultsContainer.innerHTML = jobs.map(job => createJobCard(job, resumeText)).join('');
+            };
+            reader.readAsText(resumeFile.slice(0, 500)); // Only read first part for stub
+        }
+
+        // Function to create a single job card HTML
+        function createJobCard(job, resumeStub) {
+            const score = (job.score * 100).toFixed(1);
+            return `
+                <div class="bg-white p-5 rounded-xl shadow-md transition-shadow duration-300 hover:shadow-lg">
+                    <h3 class="text-lg font-bold text-gray-900">${escapeHtml(job.job_title)}</h3>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(job.company_name)} - ${escapeHtml(job.location)}</p>
+                    <p class="text-sm text-gray-500 my-3 bg-gray-100 p-2 rounded-md">Match Score: ${score}%</p>
+                    <p class="text-gray-700 text-sm leading-relaxed">${escapeHtml(job.description)}</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <a href="${escapeHtml(job.job_board_url)}" target="_blank" class="text-blue-600 font-semibold hover:underline">View Job</a>
+                        <div id="feedback-${job.job_id}" class="feedback-section space-x-2">
+                            <button class="feedback-btn" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(resumeStub)}" onclick="handleFeedback(this, 1)">👍</button>
+                            <button class="feedback-btn" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(resumeStub)}" onclick="handleFeedback(this, 0)">👎</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to handle feedback clicks
+        async function handleFeedback(buttonElement, isRelevant) {
+            const jobId = buttonElement.dataset.jobId;
+            const resumeStub = buttonElement.dataset.resumeStub;
+            const feedbackSection = document.getElementById(`feedback-${jobId}`);
+
+            const payload = {
+                resume_text: resumeStub,
+                job_id: jobId,
+                is_relevant: isRelevant
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (response.ok) {
+                    feedbackSection.innerHTML = '<span class="text-sm text-green-600 font-semibold">Thanks!</span>';
+                }
+            } catch (error) {
+                console.error("Feedback error:", error);
+            }
+        }
+
+        // Utility functions
+        function showStatus(message, type) {
+            let colorClass = 'text-gray-600';
+            if (type === 'error') colorClass = 'text-red-600';
+            if (type === 'success') colorClass = 'text-green-600';
+            statusContainer.innerHTML = `<div class="${colorClass}">${message}</div>`;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
