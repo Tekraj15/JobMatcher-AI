@@ -1,8 +1,12 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import os
+import pdfplumber
+import docx
+from typing import Optional
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,25 +18,39 @@ load_dotenv()
 app = FastAPI(
     title="JobMatcher AI API",
     description="API for matching resumes to jobs and collecting user feedback.",
-    version="1.1.0"
+    version="2.0.0" # Final Version
 )
 
 # --- CORS Configuration ---
-origins = ["http://localhost:7860", "http://127.0.0.1:7860"]
+# Allow all origins for simplicity in local development.
+# In production, you would restrict this to your frontend's domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Request Models ---
-class ResumeQuery(BaseModel):
-    resume_text: str
-    top_k: int = Field(default=5, ge=1, le=50)
+# --- Text Extraction Logic (moved here for encapsulation) ---
+def extract_text(file: UploadFile):
+    extension = os.path.splitext(file.filename)[1].lower()
+    try:
+        if extension == ".pdf":
+            with pdfplumber.open(file.file) as pdf:
+                return "\n".join(p.extract_text() or "" for p in pdf.pages)
+        elif extension == ".docx":
+            doc = docx.Document(file.file)
+            return "\n".join(p.text for p in doc.paragraphs)
+        elif extension == ".txt":
+            return file.file.read().decode("utf-8")
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {extension}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
-# This is our data contract for the feedback endpoint
+
+# --- Request Models ---
 class FeedbackPayload(BaseModel):
     resume_text: str
     job_id: str
@@ -43,42 +61,34 @@ class FeedbackPayload(BaseModel):
 def health_check():
     return {"status": "ok"}
 
-@app.post("/match-jobs", summary="Match Resume to Jobs")
-def get_matched_jobs(data: ResumeQuery):
-    try:
-        results = match_resume_to_jobs(data.resume_text, data.top_k)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+@app.post("/match-resume-file", summary="Match Resume from File")
+async def match_resume_from_file(top_k: int, resume_file: UploadFile = File(...)):
+    """
+    Accepts a resume file (PDF, DOCX, TXT), extracts text, and returns matches.
+    """
+    if not resume_file:
+        raise HTTPException(status_code=400, detail="No resume file provided.")
+        
+    resume_text = extract_text(resume_file)
+    
+    if not resume_text:
+        raise HTTPException(status_code=400, detail="Could not extract text from the resume.")
 
-# *** Making the feedback endpoint completely foolproof ***
+    try:
+        resume_text = extract_text(resume_file)
+        stub = resume_text[:500].replace("\n", " ")
+        results = match_resume_to_jobs(resume_text, top_k)
+        return {"resume_stub": stub, "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred during matching: {str(e)}")
+
 @app.post("/feedback", summary="Receive User Feedback")
-async def receive_feedback(request: Request):
+async def receive_feedback(payload: FeedbackPayload):
     """
     Receives user feedback (relevant/not relevant) and logs it.
-    This version manually parses the request to provide maximum debugging insight.
     """
     try:
-        # Step 1: Manually get the raw JSON from the request.
-        data = await request.json()
-        
-        # Step 2: Print the received data to the terminal. This is our source of truth.
-        print("\n--- Received Feedback Payload ---")
-        print(data)
-        print("--------------------------------\n")
-
-        # Step 3: Manually validate the data against our Pydantic model.
-        # This will give a clear error if something is wrong.
-        feedback_data = FeedbackPayload(**data)
-        
-        # Step 4: If validation passes, log the feedback.
-        log_feedback(feedback_data.resume_text, feedback_data.job_id, feedback_data.is_relevant)
-        
+        log_feedback(payload.resume_text, payload.job_id, payload.is_relevant)
         return {"status": "feedback received successfully"}
-    
     except Exception as e:
-        # This will catch both validation errors and other problems.
-        error_detail = f"Failed to process feedback. Error: {str(e)}. Received data: {data}"
-        print(f"[ERROR] {error_detail}")
-        raise HTTPException(status_code=422, detail=error_detail)
-
+        raise HTTPException(status_code=500, detail=f"Failed to log feedback: {str(e)}")
