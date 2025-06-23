@@ -6,184 +6,278 @@
     <title>🤖 JobMatcher AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border-top: 4px solid #fb923c; /* Orange to match the theme */
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Custom file input styling */
+        input[type="file"]::file-selector-button {
+            background-color: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: #f9fafb;
+        }
+        /* New Feedback Button Styles */
+        .feedback-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 9999px; /* Pill shape */
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .feedback-btn.relevant {
+            background-color: #e6f9f0;
+            color: #1a7f46;
+            border-color: #b7e4c7;
+        }
+        .feedback-btn.not-relevant {
+            background-color: #fcebeb;
+            color: #c92a2a;
+            border-color: #f8d7d7;
+        }
+        .feedback-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="text-gray-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">JobMatcher AI</h1>
-            <p class="text-gray-600 mt-2">Upload your resume to find jobs that perfectly match your skills and experience.</p>
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">🤖 JobMatcher AI</h1>
+            <p class="text-gray-600 mt-1">Semantic Search based Revolutionized way of Hunting Jobs with perfect alignment between your expertises and company's requirements.</p>
+            <p class="text-sm text-gray-500 mt-2">Upload your resume, filter by city (optional), set Top‑K, then hit Search and give 👍/👎 feedback to help us improve!</p>
         </header>
 
-        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                <div class="md:col-span-2">
-                    <label for="resume-file" class="block text-sm font-medium text-gray-700 mb-1">Upload Resume (PDF, DOCX, TXT)</label>
-                    <input type="file" id="resume-file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".pdf,.docx,.txt">
-                </div>
+        <!-- Controls Section -->
+        <div class="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 <div>
-                    <label for="top-k" class="block text-sm font-medium text-gray-700 mb-1">Number of Results</label>
-                    <input type="number" id="top-k" value="10" min="1" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label for="resume-file" class="block text-sm font-medium text-gray-700 mb-1">Resume (PDF/DOCX/TXT)</label>
+                    <input type="file" id="resume-file" class="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg cursor-pointer focus:outline-none" accept=".pdf,.docx,.txt">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label for="city-filter" class="block text-sm font-medium text-gray-700 mb-1">City / Location (optional)</label>
+                        <input type="text" id="city-filter" placeholder="e.g. Bengaluru" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label for="top-k" class="block text-sm font-medium text-gray-700 mb-1">Top-K</label>
+                        <input type="range" id="top-k" value="10" min="1" max="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="text-center text-sm text-gray-500" id="top-k-value">10</div>
+                    </div>
                 </div>
             </div>
-            <div class="mt-6">
-                <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                    Search Jobs
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                <button id="search-btn" class="w-full flex items-center justify-center bg-orange-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
+                    <span id="search-btn-text">🔍 Search</span>
                 </button>
             </div>
         </div>
-
-        <div id="status-container" class="text-center my-6"></div>
-        <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-
+        
+        <!-- Status & Results -->
+        <div id="status-container" class="my-4">
+             <div class="bg-blue-100 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg" role="alert">
+                <p>Waiting for your input…</p>
+            </div>
+        </div>
+        <div id="results-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
     </div>
 
     <script>
+        // --- CONFIG ---
         const API_URL = "http://127.0.0.1:8000";
+        let allJobs = []; // Cache all jobs from the backend
+
+        // --- DOM ELEMENTS ---
         const searchBtn = document.getElementById('search-btn');
+        const searchBtnText = document.getElementById('search-btn-text');
         const resumeFileInput = document.getElementById('resume-file');
         const topKInput = document.getElementById('top-k');
+        const topKValue = document.getElementById('top-k-value');
+        const cityFilterInput = document.getElementById('city-filter');
         const statusContainer = document.getElementById('status-container');
         const resultsContainer = document.getElementById('results-container');
 
-        // Main function to handle the search
+        // --- EVENT LISTENERS ---
+        topKInput.addEventListener('input', (e) => {
+            topKValue.textContent = e.target.value;
+        });
+        searchBtn.addEventListener('click', handleSearch);
+        cityFilterInput.addEventListener('input', applyCityFilter);
+
+        // --- CORE FUNCTIONS ---
         async function handleSearch() {
             const file = resumeFileInput.files[0];
             const top_k = topKInput.value;
-
             if (!file) {
                 showStatus("Please upload a resume file first.", "error");
                 return;
             }
-
-            // Show loading state
-            searchBtn.disabled = true;
-            searchBtn.innerHTML = 'Searching...';
-            showStatus('<div class="loader mx-auto"></div><p class="mt-2">Analyzing your resume and finding matches...</p>', 'loading');
-            resultsContainer.innerHTML = '';
-
+            setLoadingState(true);
+            allJobs = [];          // Clear previous results
+            window.currentResumeStub = "";  // clear stub
             const formData = new FormData();
             formData.append("resume_file", file);
-
             try {
                 const response = await fetch(`${API_URL}/match-resume-file?top_k=${top_k}`, {
                     method: 'POST',
                     body: formData,
                 });
-
                 if (!response.ok) {
                     throw new Error(`Server responded with ${response.status}`);
                 }
+                // resume stub captured and stashed globally
+                const { resume_stub, results } = await response.json();
+                window.currentResumeStub = resume_stub || "";
+                allJobs = results || [];
 
-                const data = await response.json();
-                renderResults(data.results, file);
-
+                // now re‑render via your filter pipeline:
+                applyCityFilter();
             } catch (error) {
                 console.error("Error during search:", error);
                 showStatus(`An error occurred: ${error.message}. Is the backend server running?`, "error");
             } finally {
-                // Restore button state
-                searchBtn.disabled = false;
-                searchBtn.innerHTML = 'Search Jobs';
+                setLoadingState(false);
             }
         }
 
-        searchBtn.addEventListener('click', handleSearch);
 
-        // Function to render the results
-        function renderResults(jobs, resumeFile) {
+        function applyCityFilter() {
+            const filterText = cityFilterInput.value.trim().toLowerCase();
+            let filteredJobs = allJobs;
+            if (filterText) {
+                filteredJobs = allJobs.filter(job => 
+                    job.location && job.location.toLowerCase().includes(filterText)
+                );
+            }
+            renderResults(filteredJobs);
+            if (allJobs.length > 0) {
+                if (filteredJobs.length > 0) {
+                    const message = filterText ? `Showing ${filteredJobs.length} matches for "${cityFilterInput.value}"` : "✅ Matches found! Filter by city if you like.";
+                    showStatus(message, "success");
+                } else {
+                    showStatus(`❌ No matches found in "${cityFilterInput.value}"`, "info");
+                }
+            }
+        }
+
+        function renderResults(jobs) {
             if (!jobs || jobs.length === 0) {
-                showStatus("No matching jobs found. Try a different resume.", "info");
+                resultsContainer.innerHTML = '';
                 return;
             }
-
-            showStatus(`Found ${jobs.length} matching jobs.`, "success");
-
-            // Store resume text in a temporary way for feedback
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const resumeText = event.target.result.substring(0, 500);
-                resultsContainer.innerHTML = jobs.map(job => createJobCard(job, resumeText)).join('');
-            };
-            reader.readAsText(resumeFile.slice(0, 500)); // Only read first part for stub
+            resultsContainer.innerHTML = jobs.map(createJobCard).join('');
         }
 
-        // Function to create a single job card HTML
-        function createJobCard(job, resumeStub) {
-            const score = (job.score * 100).toFixed(1);
+        function createJobCard(job) {
+            // grab the extracted text snippet stored in window.currentResumeStub
+            const stub = window.currentResumeStub || "";
+            const score = `${(job.score * 100).toFixed(0)}%`;
+
             return `
-                <div class="bg-white p-5 rounded-xl shadow-md transition-shadow duration-300 hover:shadow-lg">
+                <div class="bg-white p-5 rounded-lg border border-gray-200 transition-shadow duration-300 hover:shadow-xl">
                     <h3 class="text-lg font-bold text-gray-900">${escapeHtml(job.job_title)}</h3>
-                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(job.company_name)} - ${escapeHtml(job.location)}</p>
-                    <p class="text-sm text-gray-500 my-3 bg-gray-100 p-2 rounded-md">Match Score: ${score}%</p>
-                    <p class="text-gray-700 text-sm leading-relaxed">${escapeHtml(job.description)}</p>
+                    <p class="text-xs text-gray-600 mt-2 flex items-center gap-4">
+                        <span>📍 ${escapeHtml(job.location)}</span>
+                        <span>💼 ${escapeHtml(job.company_name)}</span>
+                        <span class="font-semibold text-orange-600">⭐ ${score}</span>
+                    </p>
+                    <p class="text-sm text-gray-700 mt-3 leading-relaxed">${escapeHtml(job.description)}…</p>
                     <div class="mt-4 flex justify-between items-center">
-                        <a href="${escapeHtml(job.job_board_url)}" target="_blank" class="text-blue-600 font-semibold hover:underline">View Job</a>
-                        <div id="feedback-${job.job_id}" class="feedback-section space-x-2">
-                            <button class="feedback-btn" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(resumeStub)}" onclick="handleFeedback(this, 1)">👍</button>
-                            <button class="feedback-btn" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(resumeStub)}" onclick="handleFeedback(this, 0)">👎</button>
+                        <a href="${escapeHtml(job.job_board_url)}" target="_blank" class="text-blue-600 font-semibold hover:underline text-sm">View Original Post</a>
+                        <div id="feedback-${job.job_id}" class="feedback-section space-x-1">
+                            <button class="feedback-btn relevant"
+                                    data-job-id="${job.job_id}"
+                                    data-resume-stub="${escapeHtml(stub)}"
+                                    onclick="handleFeedback(this, 1)">
+                            👍 Relevant
+                            </button>
+                            <button class="feedback-btn not-relevant"
+                                    data-job-id="${job.job_id}"
+                                    data-resume-stub="${escapeHtml(stub)}"
+                                    onclick="handleFeedback(this, 0)">
+                            👎 Not Relevant
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
         }
-
-        // Function to handle feedback clicks
+        
         async function handleFeedback(buttonElement, isRelevant) {
             const jobId = buttonElement.dataset.jobId;
-            const resumeStub = buttonElement.dataset.resumeStub;
             const feedbackSection = document.getElementById(`feedback-${jobId}`);
+            const file = resumeFileInput.files[0];
+            if (!file) return; 
 
-            const payload = {
-                resume_text: resumeStub,
-                job_id: jobId,
-                is_relevant: isRelevant
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const resumeStub = event.target.result.substring(0, 500);
+                 const payload = {
+                    resume_text: resumeStub, job_id: jobId, is_relevant: isRelevant
+                };
+                try {
+                    const response = await fetch(`${API_URL}/feedback`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+                    });
+                    if (response.ok) {
+                        feedbackSection.innerHTML = '<span class="text-sm text-green-600 font-semibold">✅ Thanks!</span>';
+                    }
+                } catch (error) { console.error("Feedback error:", error); }
             };
-
-            try {
-                const response = await fetch(`${API_URL}/feedback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                if (response.ok) {
-                    feedbackSection.innerHTML = '<span class="text-sm text-green-600 font-semibold">Thanks!</span>';
-                }
-            } catch (error) {
-                console.error("Feedback error:", error);
-            }
+            reader.readAsText(file.slice(0, 500));
         }
 
-        // Utility functions
+        // --- UTILITY FUNCTIONS ---
+        function setLoadingState(isLoading) {
+            searchBtn.disabled = isLoading;
+            if (isLoading) {
+                searchBtnText.innerHTML = '<div class="loader mx-auto"></div>';
+            } else {
+                searchBtnText.innerHTML = '🔍 Search';
+            }
+        }
+        
         function showStatus(message, type) {
-            let colorClass = 'text-gray-600';
-            if (type === 'error') colorClass = 'text-red-600';
-            if (type === 'success') colorClass = 'text-green-600';
-            statusContainer.innerHTML = `<div class="${colorClass}">${message}</div>`;
+            let colorClasses = 'bg-blue-100 border-blue-200 text-blue-800';
+            if (type === 'error') colorClasses = 'bg-red-100 border-red-200 text-red-800';
+            if (type === 'success') colorClasses = 'bg-green-100 border-green-200 text-green-800';
+            statusContainer.innerHTML = `<div class="${colorClasses} px-4 py-3 rounded-lg" role="alert"><p>${message}</p></div>`;
         }
 
         function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
             return unsafe
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+                 .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
