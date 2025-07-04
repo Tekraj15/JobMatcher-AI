@@ -18,12 +18,12 @@ load_dotenv()
 app = FastAPI(
     title="JobMatcher AI API",
     description="API for matching resumes to jobs and collecting user feedback.",
-    version="2.0.0" # Final Version
+    version="2.1.0" # Final Working Version
 )
 
 # --- CORS Configuration ---
 # Allow all origins for simplicity in local development.
-# In production, you would restrict this to your frontend's domain.
+# In production, I would restrict this to my frontend's domain.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Text Extraction Logic (moved here for encapsulation) ---
+# --- Text Extraction Logic ---
 def extract_text(file: UploadFile):
     extension = os.path.splitext(file.filename)[1].lower()
     try:
@@ -69,13 +69,14 @@ async def match_resume_from_file(top_k: int, resume_file: UploadFile = File(...)
     if not resume_file:
         raise HTTPException(status_code=400, detail="No resume file provided.")
         
+    # --- CLEANUP: Call extract_text only ONCE ---
     resume_text = extract_text(resume_file)
     
     if not resume_text:
         raise HTTPException(status_code=400, detail="Could not extract text from the resume.")
 
     try:
-        resume_text = extract_text(resume_file)
+        # Use the already extracted text
         stub = resume_text[:500].replace("\n", " ")
         results = match_resume_to_jobs(resume_text, top_k)
         return {"resume_stub": stub, "results": results}
