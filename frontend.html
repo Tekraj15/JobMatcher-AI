@@ -13,7 +13,7 @@
         }
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #fb923c; /* Orange to match the theme */
+            border-top: 4px solid #fb923c;
             border-radius: 50%;
             width: 32px;
             height: 32px;
@@ -23,20 +23,21 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
         /* Custom file input styling */
         input[type="file"]::file-selector-button {
-            background-color: #fff;
-            border: 1px solid #d1d5db;
+            background-color: #fff; 
+            border: 1px solid #d1d5db; 
             border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+            padding: 0.5rem 1rem; 
+            font-size: 0.875rem; 
             font-weight: 500;
-            color: #374151;
-            cursor: pointer;
+            color: #374151; 
+            cursor: pointer; 
             transition: background-color 0.2s;
         }
-        input[type="file"]::file-selector-button:hover {
-            background-color: #f9fafb;
+        input[type="file"]::file-selector-button:hover { 
+            background-color: #f9fafb; 
         }
         /* New Feedback Button Styles */
         .feedback-btn {
@@ -47,24 +48,24 @@
             font-size: 0.8rem;
             font-weight: 500;
             transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex; 
+            align-items: center; 
             gap: 0.3rem;
         }
-        .feedback-btn.relevant {
-            background-color: #e6f9f0;
-            color: #1a7f46;
-            border-color: #b7e4c7;
+        .feedback-btn.relevant { 
+            background-color: #e6f9f0; 
+            color: #1a7f46; 
+            border-color: #b7e4c7; 
         }
-        .feedback-btn.not-relevant {
-            background-color: #fcebeb;
-            color: #c92a2a;
-            border-color: #f8d7d7;
+        .feedback-btn.not-relevant { 
+            background-color: #fcebeb; 
+            color: #c92a2a; 
+            border-color: #f8d7d7; 
         }
         .feedback-btn:hover {
-            transform: translateY(-1px);
+            transform: translateY(-1px); 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+         }
     </style>
 </head>
 <body class="text-gray-800">
@@ -75,7 +76,6 @@
             <p class="text-gray-600 mt-1">Semantic Search based Revolutionized way of Hunting Jobs with perfect alignment between your expertises and company's requirements.</p>
             <p class="text-sm text-gray-500 mt-2">Upload your resume, filter by city (optional), set Top‑K, then hit Search and give 👍/👎 feedback to help us improve!</p>
         </header>
-
         <!-- Controls Section -->
         <div class="bg-white p-6 rounded-lg border border-gray-200 mb-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -101,7 +101,6 @@
                 </button>
             </div>
         </div>
-        
         <!-- Status & Results -->
         <div id="status-container" class="my-4">
              <div class="bg-blue-100 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg" role="alert">
@@ -114,22 +113,19 @@
     <script>
         // --- CONFIG ---
         const API_URL = "http://127.0.0.1:8000";
-        let allJobs = []; // Cache all jobs from the backend
+        let allJobs = [];
+        let resumeStubGlobal = ""; // This will hold the CORRECT, backend-extracted text
 
         // --- DOM ELEMENTS ---
         const searchBtn = document.getElementById('search-btn');
-        const searchBtnText = document.getElementById('search-btn-text');
         const resumeFileInput = document.getElementById('resume-file');
         const topKInput = document.getElementById('top-k');
         const topKValue = document.getElementById('top-k-value');
         const cityFilterInput = document.getElementById('city-filter');
-        const statusContainer = document.getElementById('status-container');
         const resultsContainer = document.getElementById('results-container');
 
         // --- EVENT LISTENERS ---
-        topKInput.addEventListener('input', (e) => {
-            topKValue.textContent = e.target.value;
-        });
+        topKInput.addEventListener('input', (e) => { topKValue.textContent = e.target.value; });
         searchBtn.addEventListener('click', handleSearch);
         cityFilterInput.addEventListener('input', applyCityFilter);
 
@@ -142,66 +138,53 @@
                 return;
             }
             setLoadingState(true);
-            allJobs = [];          // Clear previous results
-            window.currentResumeStub = "";  // clear stub
+            allJobs = [];
+            resumeStubGlobal = ""; // Clear old stub
+
             const formData = new FormData();
             formData.append("resume_file", file);
             try {
                 const response = await fetch(`${API_URL}/match-resume-file?top_k=${top_k}`, {
-                    method: 'POST',
-                    body: formData,
+                    method: 'POST', body: formData,
                 });
-                if (!response.ok) {
-                    throw new Error(`Server responded with ${response.status}`);
-                }
-                // resume stub captured and stashed globally
-                const { resume_stub, results } = await response.json();
-                window.currentResumeStub = resume_stub || "";
-                allJobs = results || [];
+                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                
+                const data = await response.json();
 
-                // now re‑render via your filter pipeline:
+                // *** THE FIX: Use the resume_stub returned from the backend ***
+                // This removes the incorrect client-side FileReader logic.
+                allJobs = data.results || [];
+                resumeStubGlobal = data.resume_stub || "";
+
                 applyCityFilter();
+
             } catch (error) {
-                console.error("Error during search:", error);
-                showStatus(`An error occurred: ${error.message}. Is the backend server running?`, "error");
+                console.error("Search Error:", error);
+                showStatus(`An error occurred: ${error.message}`, "error");
             } finally {
                 setLoadingState(false);
             }
         }
 
-
         function applyCityFilter() {
-            const filterText = cityFilterInput.value.trim().toLowerCase();
-            let filteredJobs = allJobs;
-            if (filterText) {
-                filteredJobs = allJobs.filter(job => 
-                    job.location && job.location.toLowerCase().includes(filterText)
-                );
-            }
-            renderResults(filteredJobs);
-            if (allJobs.length > 0) {
-                if (filteredJobs.length > 0) {
-                    const message = filterText ? `Showing ${filteredJobs.length} matches for "${cityFilterInput.value}"` : "✅ Matches found! Filter by city if you like.";
-                    showStatus(message, "success");
-                } else {
-                    showStatus(`❌ No matches found in "${cityFilterInput.value}"`, "info");
-                }
+            const cf = cityFilterInput.value.trim().toLowerCase();
+            let filtered = allJobs;
+            if (cf) filtered = allJobs.filter(j => j.location && j.location.toLowerCase().includes(cf));
+            renderResults(filtered);
+            if (allJobs.length) {
+                if (filtered.length) showStatus(cf ? `Showing ${filtered.length} matches for "${cityFilterInput.value}"` : "✅ Matches found! Filter by city if you like.", "success");
+                else showStatus(`❌ No matches found in "${cityFilterInput.value}"`, "info");
             }
         }
 
         function renderResults(jobs) {
-            if (!jobs || jobs.length === 0) {
-                resultsContainer.innerHTML = '';
-                return;
-            }
-            resultsContainer.innerHTML = jobs.map(createJobCard).join('');
+            resultsContainer.innerHTML = jobs.length ? jobs.map(createJobCard).join('') : '';
         }
 
         function createJobCard(job) {
-            // grab the extracted text snippet stored in window.currentResumeStub
-            const stub = window.currentResumeStub || "";
-            const score = `${(job.score * 100).toFixed(0)}%`;
-
+            // Use the globally stored correct stub
+            const stub = resumeStubGlobal;
+            const score = `${(job.score*100).toFixed(0)}%`;
             return `
                 <div class="bg-white p-5 rounded-lg border border-gray-200 transition-shadow duration-300 hover:shadow-xl">
                     <h3 class="text-lg font-bold text-gray-900">${escapeHtml(job.job_title)}</h3>
@@ -213,72 +196,38 @@
                     <p class="text-sm text-gray-700 mt-3 leading-relaxed">${escapeHtml(job.description)}…</p>
                     <div class="mt-4 flex justify-between items-center">
                         <a href="${escapeHtml(job.job_board_url)}" target="_blank" class="text-blue-600 font-semibold hover:underline text-sm">View Original Post</a>
-                        <div id="feedback-${job.job_id}" class="feedback-section space-x-1">
-                            <button class="feedback-btn relevant"
-                                    data-job-id="${job.job_id}"
-                                    data-resume-stub="${escapeHtml(stub)}"
-                                    onclick="handleFeedback(this, 1)">
-                            👍 Relevant
-                            </button>
-                            <button class="feedback-btn not-relevant"
-                                    data-job-id="${job.job_id}"
-                                    data-resume-stub="${escapeHtml(stub)}"
-                                    onclick="handleFeedback(this, 0)">
-                            👎 Not Relevant
-                            </button>
+                        <div id="feedback-${job.job_id}" class="feedback-section">
+                            <button class="feedback-btn relevant" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(stub)}" onclick="handleFeedback(this, 1)">👍 Relevant</button>
+                            <button class="feedback-btn not-relevant" data-job-id="${job.job_id}" data-resume-stub="${escapeHtml(stub)}" onclick="handleFeedback(this, 0)">👎 Not Relevant</button>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
-        
-        async function handleFeedback(buttonElement, isRelevant) {
-            const jobId = buttonElement.dataset.jobId;
-            const feedbackSection = document.getElementById(`feedback-${jobId}`);
-            const file = resumeFileInput.files[0];
-            if (!file) return; 
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const resumeStub = event.target.result.substring(0, 500);
-                 const payload = {
-                    resume_text: resumeStub, job_id: jobId, is_relevant: isRelevant
-                };
-                try {
-                    const response = await fetch(`${API_URL}/feedback`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-                    });
-                    if (response.ok) {
-                        feedbackSection.innerHTML = '<span class="text-sm text-green-600 font-semibold">✅ Thanks!</span>';
-                    }
-                } catch (error) { console.error("Feedback error:", error); }
-            };
-            reader.readAsText(file.slice(0, 500));
+        async function handleFeedback(elem, isRelevant) {
+            const jobId = elem.dataset.jobId;
+            const resumeStub = elem.dataset.resumeStub;
+            const payload = { resume_text: resumeStub, job_id: jobId, is_relevant: isRelevant };
+            try {
+                await fetch(`${API_URL}/feedback`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+                elem.parentElement.innerHTML = '<span class="text-green-600 font-semibold text-sm">✅ Thanks!</span>';
+            } catch(err) { console.error("Feedback Error:", err); }
         }
 
         // --- UTILITY FUNCTIONS ---
         function setLoadingState(isLoading) {
+            const searchBtnText = document.getElementById('search-btn-text');
             searchBtn.disabled = isLoading;
-            if (isLoading) {
-                searchBtnText.innerHTML = '<div class="loader mx-auto"></div>';
-            } else {
-                searchBtnText.innerHTML = '🔍 Search';
-            }
+            searchBtnText.innerHTML = isLoading ? '<div class="loader mx-auto"></div>' : '🔍 Search';
         }
-        
-        function showStatus(message, type) {
-            let colorClasses = 'bg-blue-100 border-blue-200 text-blue-800';
-            if (type === 'error') colorClasses = 'bg-red-100 border-red-200 text-red-800';
-            if (type === 'success') colorClasses = 'bg-green-100 border-green-200 text-green-800';
-            statusContainer.innerHTML = `<div class="${colorClasses} px-4 py-3 rounded-lg" role="alert"><p>${message}</p></div>`;
+        function showStatus(msg, type) {
+            const statusContainer = document.getElementById('status-container');
+            let cls = 'bg-blue-100 border-blue-200 text-blue-800';
+            if (type==='error') cls='bg-red-100 border-red-200 text-red-800';
+            if (type==='success') cls='bg-green-100 border-green-200 text-green-800';
+            statusContainer.innerHTML = `<div class="${cls} px-4 py-3 rounded-lg" role="alert"><p>${msg}</p></div>`;
         }
-
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== 'string') return '';
-            return unsafe
-                 .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
+        function escapeHtml(u) { return String(u||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
     </script>
 </body>
 </html>
