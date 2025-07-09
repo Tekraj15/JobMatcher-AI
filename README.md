@@ -33,13 +33,13 @@ JobMatcher AI leverages state-of-the-art semantic search models to deeply analyz
 
 ## Tech Stack
 
-| Layer       | Stack                        |
-|-------------|------------------------------|
-| Frontend    | Gradio (for MVP demo)        |
-| Backend     | FastAPI + Uvicorn            |
-| ML Model    | SentenceTransformer (e5-base)|
-| Vector Store| Pinecone                     |
-| Hosting     | Hugging Face / Render        |
+| Layer       | Stack                           |
+|-------------|---------------------------------|
+| Frontend    | HTML, CSS(Tailwind) and JS      |
+| Backend     | FastAPI + Uvicorn               |
+| ML Model    | SentenceTransformer (e5-base-v2)|
+| Vector Store| Pinecone                        |
+| Hosting     | Hugging Face / Render           |
 
 ---
 
