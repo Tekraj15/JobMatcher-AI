@@ -20,6 +20,8 @@ Instead of asking job seekers to evaluate every job one by one, why not train a 
 
 JobMatcher AI leverages state-of-the-art semantic search models to deeply analyze both resumes and job descriptions. Within seconds, it returns the top-matching jobs, not just by title, but by meaningful skill and context alignment.
 
+JobMatcher AI is a modular end‑to‑end semantic search pipeline: raw job ingestion, vector embedding, Pinecone indexing, FastAPI-based search API, responsive HTML/JS frontend with real‑time feedback, and feedback‑driven fine‑tuning. Collaborators can add new data sources, improve parsing logic, or swap embedding models seamlessly.
+
 ##  Features
 
 - Upload your resume (PDF/text)
