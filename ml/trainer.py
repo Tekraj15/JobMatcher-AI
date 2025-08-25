@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 import json
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from ml.config import SCORING_WEIGHTS
+from ml.skill_exp_extraction import extract_skills_and_exp, extract_resume_skills_and_exp
+from ml.model import embed_text
 
 load_dotenv()
 
@@ -38,18 +43,68 @@ def load_job_descriptions(parquet_path="data/jobs.parquet"):
         print(f"Using fallback job data: {parquet_path}")
 
     job_df = pd.read_parquet(parquet_path)
-    job_lookup = dict(zip(job_df["job_id"].astype(str), job_df["description"]))
+    # Changed to store full job data, not just description
+    job_lookup = {}
+    for _, row in job_df.iterrows():
+        job_lookup[str(row["job_id"])] = {
+            "job_title": row.get("job_title", ""),
+            "description": row.get("description", ""),
+            "company_name": row.get("company_name", ""),
+            "location": row.get("location", "")
+        }
     return job_lookup
 
 def create_training_examples(df, job_lookup):
     examples = []
     for _, row in df.iterrows():
-        resume = row["resume_text"]
-        job_id = str(row["job_id"])
-        label = float(row["is_relevant"])
-        job_desc = job_lookup.get(job_id)
-        if job_desc:
-            examples.append(InputExample(texts=[resume, job_desc], label=label))
+        resume_text = row["resume_text"]
+        job_id = str(row["job_id"])  # Ensure it's a string
+        label = float(row["is_relevant"])  # Ensure it's a float for SentenceTransformer
+        
+        job = job_lookup.get(job_id)
+        if not job:
+            continue
+        
+        job_text = job["job_title"] + " " + job["description"]
+        
+        # NEW: Compute hybrid_score as weight
+        resume_embedding = embed_text(resume_text)
+        job_embedding = embed_text(job_text)
+        s_sem = cosine_similarity([resume_embedding], [job_embedding])[0][0]
+        
+        req_skills, opt_skills, req_exp = extract_skills_and_exp(job_text)
+        # For resume, simulate parsed_sections
+        approx_sections = {
+            "skills": [resume_text],
+            "experience": [resume_text]
+        }
+        candidate_skills, candidate_exp = extract_resume_skills_and_exp(approx_sections)
+        
+        # Compute skill_score
+        skill_match_req = len(req_skills & candidate_skills) / max(len(req_skills), 1)
+        skill_match_opt = len(opt_skills & candidate_skills) / max(len(opt_skills), 1)
+        skill_score = SCORING_WEIGHTS["w_r"] * skill_match_req + SCORING_WEIGHTS["w_o"] * skill_match_opt
+        if skill_match_req < SCORING_WEIGHTS["min_skill_threshold"]:
+            skill_score = min(skill_score, SCORING_WEIGHTS["min_skill_threshold"])
+        
+        # Compute exp_score
+        if req_exp is not None and candidate_exp is not None:
+            exp_score = min(1.0, candidate_exp / req_exp)
+        elif req_exp is not None and candidate_exp is None:
+            exp_score = SCORING_WEIGHTS["neutral_exp_score"]
+        else:
+            exp_score = 1.0
+        
+        # Hybrid score
+        hybrid_score = (SCORING_WEIGHTS["alpha"] * s_sem +
+                        SCORING_WEIGHTS["beta"] * skill_score +
+                        SCORING_WEIGHTS["gamma"] * exp_score)
+        
+        # Create InputExample for SentenceTransformer
+        # Note: For now, we're not using the weight directly in InputExample
+        # as SentenceTransformer doesn't support sample weights natively
+        examples.append(InputExample(texts=[resume_text, job_text], label=label))
+    
     return examples
 
 # --- Main Training and Evaluation Pipeline ---
