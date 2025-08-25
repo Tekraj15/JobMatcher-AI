@@ -6,6 +6,7 @@ import time
 from dotenv import load_dotenv
 from ml.model import embed_batch
 from pinecone import Pinecone, ServerlessSpec
+from ml.skill_exp_extraction import extract_skills_and_exp
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +15,7 @@ load_dotenv()
 INDEX_NAME = "jobmatcher-ai-index"
 
 #job_data_path = "data/jobs.parquet"
-JOB_DATA_PATH = "data/jobs_2025-06-11_18-30.parquet"  # TEMP: hardcoded value to be removed later
+JOB_DATA_PATH = "data/jobs_2025-08-14_22-30.parquet"  # TEMP: hardcoded value used for updating existing vectors; to be removed later
 
 # Initialize Pinecone client
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
@@ -89,6 +90,39 @@ def embed_and_store_jobs(index):
     print("All batches processed.")
 
 
+def update_job_metadata(index):
+    df = pd.read_parquet(JOB_DATA_PATH)
+    df = df.dropna(subset=["job_id", "description"])
+
+    N = len(df)
+    print(f"Updating metadata for {N} jobs in batches...")
+    BATCH_SIZE = 50
+
+    for i in tqdm(range(0, N, BATCH_SIZE)):
+        batch_df = df.iloc[i:i + BATCH_SIZE]
+        batch_texts = batch_df["description"].tolist()
+        batch_ids = batch_df["job_id"].astype(str).tolist()
+
+        # Batched extraction
+        batch_extractions = [extract_skills_and_exp(text) for text in batch_texts]
+
+        for job_id, (req_skills, opt_skills, req_exp) in zip(batch_ids, batch_extractions):
+            new_metadata = {
+                "required_skills": list(req_skills),
+                "optional_skills": list(opt_skills),
+                "required_experience": req_exp
+            }
+            try:
+                index.update(id=job_id, set_metadata=new_metadata)
+            except Exception as e:
+                print(f"⚠️ Failed to update metadata for job {job_id}: {e}")
+
+        time.sleep(0.5)
+
+    print("Metadata updates completed.")
+
+
 if __name__ == "__main__":
     index = create_or_get_index()
-    embed_and_store_jobs(index)
+    # embed_and_store_jobs(index)  # For full upsert
+    update_job_metadata(index)  # For metadata-only updates
