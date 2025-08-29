@@ -43,17 +43,8 @@ JobMatcher AI is a modular end‑to‑end semantic search pipeline: raw job inge
 ## System Architecture
 
 
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   ML Model      │    │   HuggingFace   │
-│   (HTML/JS)     │<──>│   (FastAPI)     │<──>│  (finetuned/)   │<──>│ (Model Hosting) │
-└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
-                              |                       
-                              |  
-┌─────────────────┐    ┌─────────────────┐   
-│   Job Board     │    │   Pinecone      │    
-│  (Mantiks API)  │───>│   (Vector DB)   │
-└─────────────────┘    └─────────────────┘      
-          
+<img width="596" height="228" alt="Screenshot 2025-08-29 at 7 00 05 PM" src="https://github.com/user-attachments/assets/dda8eda6-43d9-41bb-b720-9dd6c354c0cb" />
+
 
 
 ## What makes JobMatcher-AI a unique job matching platform?
