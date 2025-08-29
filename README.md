@@ -28,7 +28,23 @@ JobMatcher AI solves this through a state-of-the-art semantic search models supp
 - **Weighted Re-ranking**: Intelligent combination of multiple signals for accurate prioritization
 - **Feedback labelled Fine-tuning**: Model trained and fine-tuned using user provided feedback labels('relavant' or 'not relevant') to improve the job matching and recommendation engine further.
 
-##  Features
+## System Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐       ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   ML Model      │       │   HuggingFace   │
+│   (HTML/JS)     │<──>│   (FastAPI)     │<──>│  (finetuned/)   │<----->│  (Model Hosting)│
+└─────────────────┘    └─────────────────┘    └─────────────────┘       └─────────────────┘
+                              |                       
+                              |  
+┌─────────────────┐    ┌─────────────────┐   
+│   Job Board     │    │   Pinecone      │    
+│   (Mantiks API) │─-->│   (Vector DB)   │
+└─────────────────┘    │   Pinecone      │            
+                       └─────────────────┘            
+```
+
+##  Features of JobMatcher-AI
 
 - Upload your resume (PDF/text)
 - Retrieve top-k best matching jobs using hybrid score (semantic similarity using e5-base-v2 and heuristic signals)
