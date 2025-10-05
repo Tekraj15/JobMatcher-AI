@@ -28,20 +28,30 @@ JobMatcher AI solves this through a state-of-the-art semantic search models supp
 - **Weighted Re-ranking**: Intelligent combination of multiple signals for accurate prioritization
 - **Feedback labelled Fine-tuning**: Model trained and fine-tuned using user provided feedback labels('relavant' or 'not relevant') to improve the job matching and recommendation engine further.
 
-## System Architecture
+## Process Flow Architecture
+The key technique that poweres JobMatcher-AI as a robust Job Matching engine is Hybrid Retrieval - Combination of Semantic Search and Heuristic Signal Matching. 
+The Hybrid Retrieval pipeline:
+
+- computes SentenceTransformer embeddings and vector-similarity (dense retrieval),
+
+- extracts skills and experience, computes heuristic/keyword scores (sparse/heuristic signals),
+
+- merges them with learned or fixed weights (hybrid scoring / re-ranking).
+
+The overall process architecture is as below:
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐       ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   ML Model      │       │   HuggingFace   │
-│   (HTML/JS)     │<──>│   (FastAPI)     │<──>│  (finetuned/)   │<----->│  (Model Hosting)│
-└─────────────────┘    └─────────────────┘    └─────────────────┘       └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   ML Model      │    │   HuggingFace   │
+│   (HTML/JS)     │<──>│   (FastAPI)     │<──>│  (finetuned/)   │<──>│ (Model Hosting) │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
                               |                       
                               |  
 ┌─────────────────┐    ┌─────────────────┐   
 │   Job Board     │    │   Pinecone      │    
-│   (Mantiks API) │─-->│   (Vector DB)   │
-└─────────────────┘    │   Pinecone      │            
-                       └─────────────────┘            
+│  (Mantiks API)  │───>│   (Vector DB)   │
+└─────────────────┘    └─────────────────┘      
+          
 ```
 
 ##  Features of JobMatcher-AI
@@ -56,7 +66,7 @@ JobMatcher AI solves this through a state-of-the-art semantic search models supp
 
 ## What makes JobMatcher-AI a unique job matching platform?
 
-## 1. Advanced Job Matching
+## 1. Advanced and Robust Job Matching
 - **Hybrid Scoring System**: Combines semantic similarity (60%), skill matching (30%), and experience alignment (10%)
 - **Intelligent Skill Extraction**: Automatically identifies required and optional skills from job descriptions using heading detection and token analysis
 - **Experience Parsing**: Extracts and validates years of experience from both resumes and job requirements
