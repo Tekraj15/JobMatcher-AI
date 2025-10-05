@@ -20,13 +20,13 @@ Instead of asking job seekers to evaluate every job one by one, why not train a 
 
 JobMatcher AI leverages state-of-the-art semantic search models supported by heuristic signals(Skills Matching and Experience Allignment) to deeply analyze both resumes and job descriptions. Within seconds, it returns the top-matching jobs, not just by title, but by meaningful skill and context alignment.
 
-JobMatcher AI solves this through a state-of-the-art semantic search models supported by hybrid scoring system that combines:
+JobMatcher AI solves this through a state-of-the-art semantic search model supported by a hybrid scoring system that combines:
 - **Semantic Understanding**: Deep contextual analysis using transformer models
 - **Heuristic Signals**:
   - Skill Matching: Precise extraction and comparison of technical requirements
-  - Experience Alignment: Years-of-experience validation against job requirements
+  - Experience Alignment: Years of experience validation against job requirements
 - **Weighted Re-ranking**: Intelligent combination of multiple signals for accurate prioritization
-- **Feedback labelled Fine-tuning**: Model trained and fine-tuned using user provided feedback labels('relavant' or 'not relevant') to improve the job matching and recommendation engine further.
+- **Feedback labelled Fine-tuning**: Model trained and fine-tuned using user-provided feedback labels('relevant' or 'not relevant') to improve the job matching and recommendation engine further.
 
 ## Process Flow Architecture
 The key technique that poweres JobMatcher-AI as a robust Job Matching engine is Hybrid Retrieval - Combination of Semantic Search and Heuristic Signal Matching. 
@@ -55,13 +55,24 @@ The overall process architecture is as below:
 ```
 
 ##  Features of JobMatcher-AI
+JobMatcher AI is a modular end‑to‑end semantic search pipeline: raw job ingestion, vector embedding, Pinecone indexing, FastAPI-based search API, responsive HTML/JS frontend with real‑time feedback, and feedback‑driven fine‑tuning. Collaborators can add new data sources, improve parsing logic, or swap embedding models seamlessly.
+
+##  Key Features
 
 - Upload your resume (PDF/text)
 - Retrieve top-k best matching jobs using hybrid score (semantic similarity using e5-base-v2 and heuristic signals)
 - Feedback loop to improve job matching quality
 - Real-time FastAPI backend
-- HTML, CSS, and JS powered simplistic yet impressive UI
+- HTML, CSS, and JS-powered simplistic yet impressive UI
 - Hugging Face Spaces-ready
+
+
+## System Architecture
+Process Flow Design
+
+
+<img width="596" height="228" alt="Screenshot 2025-08-29 at 7 00 05 PM" src="https://github.com/user-attachments/assets/dda8eda6-43d9-41bb-b720-9dd6c354c0cb" />
+
 
 
 ## What makes JobMatcher-AI a unique job matching platform?
